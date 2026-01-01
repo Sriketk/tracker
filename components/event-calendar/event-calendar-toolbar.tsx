@@ -1,13 +1,13 @@
 'use client';
 
 import { TimeFormatToggle } from './ui/time-format-toggel';
-import { ViewModeToggle } from './ui/view-mode-toggle';
-import { CalendarViewType, TimeFormatType, ViewModeType } from '@/types/event';
+import { CalendarViewType, TimeFormatType } from '@/types/event';
 import { useEventCalendarStore } from '@/hooks/use-event';
 import { EventCalendarTabs } from './event-calendar-tabs';
 import { useShallow } from 'zustand/shallow';
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import CalendarSettingsDialog from './event-calendar-setting-dialog';
+import { format } from 'date-fns';
 
 interface EventCalendarToolbarProps {
   disabledViews?: CalendarViewType[];
@@ -16,36 +16,36 @@ interface EventCalendarToolbarProps {
 export default function EventCalendarToolbar({
   disabledViews = [],
 }: EventCalendarToolbarProps = {}) {
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+
   const {
-    viewMode,
     timeFormat,
     currentView,
     setView,
     setTimeFormat,
-    setMode,
   } = useEventCalendarStore(
     useShallow((state) => ({
-      viewMode: state.viewMode,
       timeFormat: state.timeFormat,
       currentView: state.currentView,
       setView: state.setView,
       setTimeFormat: state.setTimeFormat,
-      setMode: state.setMode,
     })),
   );
+
+  // Update current date/time every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleTimeFormatChange = useCallback(
     (format: TimeFormatType) => {
       setTimeFormat(format);
     },
     [setTimeFormat],
-  );
-
-  const handleViewModeChange = useCallback(
-    (mode: ViewModeType) => {
-      setMode(mode);
-    },
-    [setMode],
   );
 
   const handleViewTypeChange = useCallback(
@@ -55,8 +55,19 @@ export default function EventCalendarToolbar({
     [setView],
   );
 
+  // Format date and time
+  const formattedDate = format(currentDateTime, 'EEEE, MMMM d, yyyy');
+  const formattedTime = format(
+    currentDateTime,
+    timeFormat === TimeFormatType.HOUR_24 ? 'HH:mm:ss' : 'h:mm:ss a'
+  );
+
   return (
     <div className="bg-muted/30 flex items-center justify-between border-b px-4 py-2">
+      <div className="flex flex-col">
+        <div className="text-sm font-medium">{formattedDate}</div>
+        <div className="text-xs text-muted-foreground">{formattedTime}</div>
+      </div>
       <EventCalendarTabs
         viewType={currentView}
         onChange={handleViewTypeChange}
@@ -67,9 +78,9 @@ export default function EventCalendarToolbar({
           format={timeFormat}
           onChange={handleTimeFormatChange}
         />
-        <ViewModeToggle mode={viewMode} onChange={handleViewModeChange} />
         <CalendarSettingsDialog />
       </div>
     </div>
   );
 }
+ 

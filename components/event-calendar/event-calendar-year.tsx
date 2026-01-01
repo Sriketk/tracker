@@ -14,6 +14,7 @@ import { useShallow } from 'zustand/shallow';
 import { CalendarViewType, Events } from '@/types/event';
 import { MonthCard } from './ui/month-card';
 import { parseAsIsoDate, useQueryState } from 'nuqs';
+import { getLocaleFromCode } from '@/lib/event';
 
 interface CalendarYearProps {
   events: Events[];
@@ -27,6 +28,7 @@ export function EventCalendarYear({ events, currentDate }: CalendarYearProps) {
     openDayEventsDialog,
     setView,
     viewSettings,
+    locale,
   } = useEventCalendarStore(
     useShallow((state) => ({
       openQuickAddDialog: state.openQuickAddDialog,
@@ -34,8 +36,11 @@ export function EventCalendarYear({ events, currentDate }: CalendarYearProps) {
       openDayEventsDialog: state.openDayEventsDialog,
       setView: state.setView,
       viewSettings: state.viewSettings.year,
+      locale: state.locale,
     })),
   );
+
+  const localeObj = getLocaleFromCode(locale);
 
   const [, setDate] = useQueryState(
     'date',
@@ -108,6 +113,7 @@ export function EventCalendarYear({ events, currentDate }: CalendarYearProps) {
           eventsByDate={eventsByDate}
           eventCount={eventCountByMonth[getMonth(month)]}
           yearViewConfig={viewSettings}
+          locale={localeObj}
           onMonthClick={handleMonthClick}
           onEventClick={openEventDialog}
           onDateClick={handleDateClick}

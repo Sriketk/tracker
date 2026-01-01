@@ -10,12 +10,15 @@ import { cn } from '@/lib/utils';
 import {
   eachDayOfInterval,
   endOfMonth,
+  endOfWeek,
   format,
   getDate,
   getMonth,
   isSameMonth,
   isSameYear,
   startOfMonth,
+  startOfWeek,
+  Locale,
 } from 'date-fns';
 import { ChevronRight, Plus } from 'lucide-react';
 import { memo, useMemo } from 'react';
@@ -26,6 +29,7 @@ interface MonthCardProps {
   eventsByDate: Record<string, Events[]>;
   eventCount: number;
   yearViewConfig: YearViewConfig;
+  locale?: Locale;
   onMonthClick: (month: Date) => void;
   onEventClick: (event: Events) => void;
   onDateClick: (date: Date) => void;
@@ -81,19 +85,37 @@ const MonthDaysGrid = memo(
     month,
     eventsByDate,
     onDateClick,
+    locale,
   }: {
     month: Date;
     eventsByDate: Record<string, Events[]>;
     onDateClick: (date: Date) => void;
+    locale?: Locale;
   }) => {
-    const daysInMonth = eachDayOfInterval({
-      start: startOfMonth(month),
-      end: endOfMonth(month),
+    const monthStart = startOfMonth(month);
+    const monthEnd = endOfMonth(month);
+    const gridStart = startOfWeek(monthStart, { locale });
+    const gridEnd = endOfWeek(monthEnd, { locale });
+    
+    const visibleDays = eachDayOfInterval({
+      start: gridStart,
+      end: gridEnd,
     });
+
+    // Generate day headers based on locale
+    const dayHeaders = useMemo(() => {
+      if (!locale) return ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+      const weekStart = startOfWeek(new Date(), { locale });
+      return Array.from({ length: 7 }, (_, i) => {
+        const day = new Date(weekStart);
+        day.setDate(weekStart.getDate() + i);
+        return format(day, 'EEEEEE', { locale }); // Short day name
+      });
+    }, [locale]);
 
     return (
       <div className="grid grid-cols-7 gap-1 text-center text-xs">
-        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+        {dayHeaders.map((day, i) => (
           <div
             key={i}
             className="text-muted-foreground mb-1 text-[10px] font-medium"
@@ -101,13 +123,14 @@ const MonthDaysGrid = memo(
             {day}
           </div>
         ))}
-        {daysInMonth.map((day) => {
+        {visibleDays.map((day) => {
           const dateKey = format(day, 'yyyy-MM-dd');
+          const isCurrentMonth = isSameMonth(day, month);
           return (
             <DayCell
               key={dateKey}
               day={day}
-              events={eventsByDate[dateKey] || []}
+              events={isCurrentMonth ? (eventsByDate[dateKey] || []) : []}
               isToday={isSameDay(day, new Date())}
               onClick={() => onDateClick(day)}
             />
@@ -126,6 +149,7 @@ const MonthCard = memo(
     eventsByDate,
     eventCount,
     yearViewConfig,
+    locale,
     onMonthClick,
     onEventClick,
     onDateClick,
@@ -191,6 +215,7 @@ const MonthCard = memo(
           month={month}
           eventsByDate={eventsByDate}
           onDateClick={onDateClick}
+          locale={locale}
         />
 
         {hasEvents && yearViewConfig.enableEventPreview ? (

@@ -13,7 +13,7 @@ import { useEventCalendarStore } from '@/hooks/use-event';
 import { useShallow } from 'zustand/shallow';
 import { DayCell } from './ui/day-cell';
 import { WeekDayHeaders } from './ui/week-days-header';
-import { getLocaleFromCode, useWeekDays } from '@/lib/event';
+import { getLocaleFromCode } from '@/lib/event';
 import { formatDate } from '@/lib/date';
 import { Events } from '@/types/event';
 
@@ -26,9 +26,7 @@ interface CalendarMonthProps {
 export function EventCalendarMonth({ events, baseDate }: CalendarMonthProps) {
   const {
     timeFormat,
-    firstDayOfWeek,
     locale,
-    weekStartDay,
     viewSettings,
     openDayEventsDialog,
     openEventDialog,
@@ -36,10 +34,8 @@ export function EventCalendarMonth({ events, baseDate }: CalendarMonthProps) {
   } = useEventCalendarStore(
     useShallow((state) => ({
       timeFormat: state.timeFormat,
-      firstDayOfWeek: state.firstDayOfWeek,
       viewSettings: state.viewSettings.month,
       locale: state.locale,
-      weekStartDay: state.firstDayOfWeek,
       openDayEventsDialog: state.openDayEventsDialog,
       openEventDialog: state.openEventDialog,
       openQuickAddDialog: state.openQuickAddDialog,
@@ -49,21 +45,20 @@ export function EventCalendarMonth({ events, baseDate }: CalendarMonthProps) {
   const [focusedDate, setFocusedDate] = useState<Date | null>(null);
   const localeObj = getLocaleFromCode(locale);
 
-  const { weekNumber, weekDays } = useWeekDays(
-    baseDate,
-    DAYS_IN_WEEK,
-    localeObj,
-  );
-
-  // Calculate visible days in month
+  // Calculate visible days in month (week starts on Sunday)
   const visibleDays = useMemo(() => {
     const monthStart = startOfMonth(baseDate);
     const monthEnd = endOfMonth(baseDate);
-    const gridStart = startOfWeek(monthStart, { weekStartsOn: weekStartDay });
-    const gridEnd = endOfWeek(monthEnd, { weekStartsOn: weekStartDay });
+    const gridStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+    const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
 
     return eachDayOfInterval({ start: gridStart, end: gridEnd });
-  }, [baseDate, weekStartDay]);
+  }, [baseDate]);
+
+  // Use the first 7 days from visibleDays for headers to ensure alignment
+  const headerDays = useMemo(() => {
+    return visibleDays.slice(0, DAYS_IN_WEEK);
+  }, [visibleDays]);
 
   // Groups events by their start date
   const eventsGroupedByDate = useMemo(() => {
@@ -91,11 +86,10 @@ export function EventCalendarMonth({ events, baseDate }: CalendarMonthProps) {
   return (
     <div className="flex flex-col border py-2">
       <WeekDayHeaders
-        weekNumber={weekNumber}
-        daysInWeek={weekDays}
+        daysInWeek={headerDays}
         formatDate={formatDate}
         locale={localeObj}
-        firstDayOfWeek={firstDayOfWeek}
+        firstDayOfWeek={0}
       />
       <div
         ref={daysContainerRef}
