@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { format, isSameDay, isSameMonth, Locale } from 'date-fns';
 import { Events, MonthViewConfig, TimeFormatType } from '@/types/event';
 import { getColorClasses } from '@/lib/event';
+import { useRouter } from 'next/navigation';
 
 interface DayCellProps {
   date: Date;
@@ -35,6 +36,7 @@ export function DayCell({
   onShowDayEvents,
   onOpenEvent,
 }: DayCellProps) {
+  const router = useRouter();
   const dateKey = format(date, 'yyyy-MM-dd');
   const dayEvents = eventsByDate[dateKey] || [];
   const isToday = isSameDay(date, new Date());
@@ -44,6 +46,17 @@ export function DayCell({
   const _isFocused = focusedDate && isSameDay(date, focusedDate);
   const shouldRenderEvents = isWithinMonth && dayEvents.length > 0;
   const colorClasses = firstEvent ? getColorClasses(firstEvent.color) : null;
+
+  const handleDateClick = () => {
+    router.push(`/day/${dateKey}`);
+    onFocusDate(date);
+  };
+
+  const handleRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onQuickAdd(date);
+    onFocusDate(date);
+  };
   return (
     <div
       data-date={dateKey}
@@ -62,14 +75,11 @@ export function DayCell({
             : '',
         // _isFocused && 'ring-2 ring-blue-500',
       )}
-      onClick={() => {
-        onQuickAdd(date);
-        onFocusDate(date);
-      }}
+      onClick={handleDateClick}
+      onContextMenu={handleRightClick}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
-          onQuickAdd(date);
-          onFocusDate(date);
+          handleDateClick();
           e.preventDefault();
         }
       }}

@@ -23,6 +23,7 @@ import {
 import { ChevronRight, Plus } from 'lucide-react';
 import { memo, useMemo } from 'react';
 import { Events, YearViewConfig } from '@/types/event';
+import { useRouter } from 'next/navigation';
 
 interface MonthCardProps {
   month: Date;
@@ -40,10 +41,11 @@ interface DayCellProps {
   day: Date;
   events: Events[];
   isToday: boolean;
-  onClick: () => void;
+  onLeftClick: () => void;
+  onRightClick: () => void;
 }
 
-const DayCell = memo(({ day, events, isToday, onClick }: DayCellProps) => {
+const DayCell = memo(({ day, events, isToday, onLeftClick, onRightClick }: DayCellProps) => {
   const hasDayEvents = events.length > 0;
 
   const tooltipContent = useMemo(
@@ -54,6 +56,11 @@ const DayCell = memo(({ day, events, isToday, onClick }: DayCellProps) => {
     [hasDayEvents, events.length, day],
   );
 
+  const handleRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onRightClick();
+  };
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -63,7 +70,8 @@ const DayCell = memo(({ day, events, isToday, onClick }: DayCellProps) => {
             isToday ? 'bg-blue-500 font-bold text-white' : '',
             hasDayEvents && !isToday ? 'bg-primary/10 font-medium' : '',
           )}
-          onClick={onClick}
+          onClick={onLeftClick}
+          onContextMenu={handleRightClick}
         >
           {getDate(day)}
           {hasDayEvents && !isToday && (
@@ -85,13 +93,16 @@ const MonthDaysGrid = memo(
     month,
     eventsByDate,
     onDateClick,
+    onQuickAdd,
     locale,
   }: {
     month: Date;
     eventsByDate: Record<string, Events[]>;
     onDateClick: (date: Date) => void;
+    onQuickAdd: (date: Date) => void;
     locale?: Locale;
   }) => {
+    const router = useRouter();
     const monthStart = startOfMonth(month);
     const monthEnd = endOfMonth(month);
     const gridStart = startOfWeek(monthStart, { locale });
@@ -132,7 +143,8 @@ const MonthDaysGrid = memo(
               day={day}
               events={isCurrentMonth ? (eventsByDate[dateKey] || []) : []}
               isToday={isSameDay(day, new Date())}
-              onClick={() => onDateClick(day)}
+              onLeftClick={() => router.push(`/day/${dateKey}`)}
+              onRightClick={() => onQuickAdd(day)}
             />
           );
         })}
@@ -215,6 +227,7 @@ const MonthCard = memo(
           month={month}
           eventsByDate={eventsByDate}
           onDateClick={onDateClick}
+          onQuickAdd={onQuickAdd}
           locale={locale}
         />
 
