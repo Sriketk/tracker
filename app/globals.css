@@ -334,3 +334,33 @@ ul[data-type="taskList"] li[data-checked="true"] > div > p {
   text-decoration-thickness: 2px;
 }
 
+/* ProseMirror cursor and placeholder styles */
+.ProseMirror {
+  caret-color: var(--foreground);
+}
+
+.ProseMirror .is-editor-empty:first-child::before,
+.ProseMirror p.is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+  height: 0;
+}
+
+/* Hide placeholder in heading nodes */
+.ProseMirror h1.is-empty::before,
+.ProseMirror h2.is-empty::before,
+.ProseMirror h3.is-empty::before {
+  display: none;
+}
+
+.ProseMirror:focus {
+  outline: none;
+}
+
+.ProseMirror:focus .is-editor-empty:first-child::before,
+.ProseMirror:focus p.is-empty::before {
+  opacity: 0.5;
+}
+

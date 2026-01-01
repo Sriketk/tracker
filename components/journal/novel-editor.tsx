@@ -9,7 +9,9 @@ import {
   EditorCommandList,
   EditorBubble,
 } from 'novel';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import {
   TiptapImage,
   TiptapLink,
@@ -45,7 +47,11 @@ import { TextButtons } from './selectors/text-buttons';
 import { ColorSelector } from './selectors/color-selector';
 
 // Configure extensions with Tailwind classes
-const placeholder = Placeholder;
+const placeholder = Placeholder.configure({
+  showOnlyWhenEditable: true,
+  showOnlyCurrent: true,
+  includeChildren: false,
+});
 const tiptapLink = TiptapLink.configure({
   HTMLAttributes: {
     class: cx(
@@ -135,7 +141,7 @@ const suggestionItems = createSuggestionItems([
     title: 'To-do List',
     description: 'Track tasks with a to-do list.',
     searchTerms: ['todo', 'task', 'list', 'check', 'checkbox'],
-    icon: <CheckSquare size={18} />,
+    icon: <CheckSquare size={20} />,
     command: ({ editor, range }) => {
       editor.chain().focus().deleteRange(range).toggleTaskList().run();
     },
@@ -250,49 +256,107 @@ const defaultExtensions = [
 interface NovelEditorProps {
   initialContent?: JSONContent | null;
   onUpdate?: (content: JSONContent) => void;
+  onSaveStatusChange?: (isSaving: boolean, isSaved: boolean) => void;
   dateKey: string; // YYYY-MM-DD format for localStorage key
 }
 
 export function NovelEditor({
   initialContent,
   onUpdate,
+  onSaveStatusChange,
   dateKey,
 }: NovelEditorProps) {
-  const [content, setContent] = useState<JSONContent | null>(initialContent || null);
   const [openNode, setOpenNode] = useState(false);
   const [openLink, setOpenLink] = useState(false);
   const [openColor, setOpenColor] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
-  // Load from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem(`journal-${dateKey}`);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setContent(parsed);
-      } catch (e) {
-        console.error('Error parsing stored content:', e);
+  // Load from Convex
+  const journalEntry = useQuery(api.journal.get, { dateKey });
+  const saveJournal = useMutation(api.journal.save);
+
+  // Set content from Convex when it loads
+  const content = journalEntry?.content || initialContent || null;
+
+  // Default content structure
+  const defaultContent: JSONContent = {
+    type: 'doc',
+    content: [
+      {
+        type: 'heading',
+        attrs: { level: 1 },
+        content: [],
+      },
+      {
+        type: 'paragraph',
+        content: [],
+      },
+    ],
+  };
+
+  // Debounce timer for saving (using ref to avoid dependency issues)
+  const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Save to Convex when content changes (debounced)
+  const handleUpdate = useCallback(
+    ({ editor }: { editor: any }) => {
+      const json = editor.getJSON();
+      
+      // Clear existing timer
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
       }
-    }
-  }, [dateKey]);
 
-  // Save to localStorage when content changes
+      // Set saving state
+      setIsSaving(true);
+      setIsSaved(false);
+      onSaveStatusChange?.(true, false);
+
+      // Set new timer to save after 1 second of inactivity
+      saveTimerRef.current = setTimeout(async () => {
+        try {
+          await saveJournal({ dateKey, content: json });
+          onUpdate?.(json);
+          setIsSaved(true);
+          setIsSaving(false);
+          onSaveStatusChange?.(false, true);
+          // Hide saved icon after 2 seconds
+          setTimeout(() => {
+            setIsSaved(false);
+            onSaveStatusChange?.(false, false);
+          }, 2000);
+        } catch {
+          setIsSaving(false);
+          onSaveStatusChange?.(false, false);
+        }
+      }, 1000);
+    },
+    [dateKey, saveJournal, onUpdate, onSaveStatusChange],
+  );
+
+  // Cleanup timer on unmount
   useEffect(() => {
-    if (content) {
-      localStorage.setItem(`journal-${dateKey}`, JSON.stringify(content));
-      onUpdate?.(content);
-    }
-  }, [content, dateKey, onUpdate]);
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <EditorRoot>
       <EditorContent
+        key={`${dateKey}-${journalEntry?._id || 'new'}`} // Force re-render when dateKey or entry changes
         extensions={defaultExtensions}
-        initialContent={content || undefined}
-        onUpdate={({ editor }) => {
-          const json = editor.getJSON();
-          setContent(json);
+        initialContent={content || defaultContent}
+        onCreate={({ editor }) => {
+          // Auto-focus the editor when it's created
+          setTimeout(() => {
+            editor.commands.focus();
+          }, 0);
         }}
+        onUpdate={handleUpdate}
         editorProps={{
           handleDOMEvents: {
             keydown: (_view, event) => handleCommandNavigation(event),
