@@ -1,6 +1,22 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
+/**
+ * Validator for JSONContent from TipTap/Novel editor
+ * JSONContent is a recursive structure, so we validate it as a flexible object
+ * that matches the TipTap JSON format
+ */
+const jsonContentValidator = v.union(
+  v.object({
+    type: v.string(),
+    content: v.optional(v.array(v.any())), // Recursive: array of JSONContent
+    attrs: v.optional(v.any()), // Flexible attributes object
+    marks: v.optional(v.array(v.any())), // Array of mark objects
+    text: v.optional(v.string()), // Text content for text nodes
+  }),
+  v.null(),
+);
+
 // Get journal entry for a specific date
 export const get = query({
   args: {
@@ -50,7 +66,7 @@ export const getByDateRange = query({
 export const save = mutation({
   args: {
     dateKey: v.string(),
-    content: v.any(),
+    content: jsonContentValidator,
   },
   handler: async (ctx, args) => {
     // Check if entry exists

@@ -8,6 +8,7 @@ import {
   EditorCommandItem,
   EditorCommandList,
   EditorBubble,
+  useEditor,
 } from 'novel';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation } from 'convex/react';
@@ -54,6 +55,9 @@ import { LinkSelector } from './selectors/link-selector';
 import { TextButtons } from './selectors/text-buttons';
 import { ColorSelector } from './selectors/color-selector';
 import { toast } from 'sonner';
+
+// Type for the TipTap editor instance (can be null)
+type Editor = NonNullable<ReturnType<typeof useEditor>['editor']>;
 
 // Image upload function
 const onUpload = async (file: File): Promise<string> => {
@@ -387,9 +391,9 @@ export function NovelEditor({
 
   // Save to Convex when content changes (debounced)
   const handleUpdate = useCallback(
-    ({ editor }: { editor: any }) => {
-      // Don't save if editor is read-only
-      if (!editable) return;
+    ({ editor }: { editor: Editor | null }) => {
+      // Don't save if editor is read-only or editor is null
+      if (!editable || !editor) return;
       
       const json = editor.getJSON();
       
@@ -435,7 +439,7 @@ export function NovelEditor({
   }, []);
 
   // Store editor reference to update editable state
-  const editorRef = useRef<any>(null);
+  const editorRef = useRef<Editor | null>(null);
 
   // Update editor editable state when prop changes
   useEffect(() => {

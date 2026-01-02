@@ -1,10 +1,25 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+/**
+ * Validator for JSONContent from TipTap/Novel editor
+ * JSONContent is a recursive structure representing the editor's document structure
+ */
+const jsonContentValidator = v.union(
+  v.object({
+    type: v.string(),
+    content: v.optional(v.array(v.any())), // Recursive: array of JSONContent
+    attrs: v.optional(v.any()), // Flexible attributes object
+    marks: v.optional(v.array(v.any())), // Array of mark objects
+    text: v.optional(v.string()), // Text content for text nodes
+  }),
+  v.null(),
+);
+
 export default defineSchema({
   journalEntries: defineTable({
     dateKey: v.string(), // YYYY-MM-DD format
-    content: v.any(), // JSONContent from Novel
+    content: jsonContentValidator, // JSONContent from Novel
     updatedAt: v.number(), // timestamp
   })
     .index("by_date", ["dateKey"]),

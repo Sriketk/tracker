@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useTransition, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Transition } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { CalendarViewType } from '@/types/event';
 import { MoreHorizontal, ChevronDown } from 'lucide-react';
@@ -22,12 +22,12 @@ interface CalendarTabsProps {
 }
 
 type TabConfig = {
-  label: string;
-  value: CalendarViewType;
-  hasDropdown?: boolean;
+  readonly label: string;
+  readonly value: CalendarViewType;
+  readonly hasDropdown?: boolean;
 };
 
-const tabsConfig: TabConfig[] = [
+const tabsConfig: readonly TabConfig[] = [
   {
     label: 'Day',
     value: CalendarViewType.DAY,
@@ -49,17 +49,27 @@ const tabsConfig: TabConfig[] = [
     label: 'Year',
     value: CalendarViewType.YEAR,
   },
-];
+] as const;
 
-const daysOptions = [3, 5, 7, 10, 14, 31];
+const daysOptions: readonly number[] = [3, 5, 7, 10, 14, 31] as const;
 
-const transition = {
+const transition: Transition = {
   type: 'tween',
   ease: 'easeOut',
   duration: 0.15,
+} as const;
+
+type HoverAnimationProps = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 };
 
-const getHoverAnimationProps = (hoveredRect: DOMRect, navRect: DOMRect) => ({
+const getHoverAnimationProps = (
+  hoveredRect: DOMRect,
+  navRect: DOMRect,
+): HoverAnimationProps => ({
   x: hoveredRect.left - navRect.left - 10,
   y: hoveredRect.top - navRect.top - 4,
   width: hoveredRect.width + 20,
@@ -72,8 +82,8 @@ export function EventCalendarTabs({
   className = '',
   disabledViews = [],
 }: CalendarTabsProps) {
-  const desktopButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const mobileButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const desktopButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const mobileButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const navRef = useRef<HTMLDivElement>(null);
   const mobileNavRef = useRef<HTMLDivElement>(null);
   const dropdownButtonRef = useRef<HTMLButtonElement>(null);
@@ -139,7 +149,7 @@ export function EventCalendarTabs({
       : null;
   const dropdownRect = dropdownButtonRef.current?.getBoundingClientRect();
 
-  const updateView = (tabValue: CalendarViewType) => {
+  const updateView = (tabValue: CalendarViewType): void => {
     if (!disabledViews.includes(tabValue)) {
       onChange(tabValue);
       setView(tabValue);
@@ -148,19 +158,28 @@ export function EventCalendarTabs({
 
   const handleTabClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    const tabValue = e.currentTarget.dataset.value as CalendarViewType;
-    if (e.currentTarget.dataset.dropdown !== 'true') {
-      updateView(tabValue);
+    const tabValue = e.currentTarget.dataset.value;
+    if (
+      tabValue &&
+      Object.values(CalendarViewType).includes(tabValue as CalendarViewType) &&
+      e.currentTarget.dataset.dropdown !== 'true'
+    ) {
+      updateView(tabValue as CalendarViewType);
     }
   };
 
   const handleDropdownClick = (e: React.MouseEvent<HTMLElement>) => {
     e.preventDefault();
-    const tabValue = e.currentTarget.dataset.value as CalendarViewType;
-    updateView(tabValue);
+    const tabValue = e.currentTarget.dataset.value;
+    if (
+      tabValue &&
+      Object.values(CalendarViewType).includes(tabValue as CalendarViewType)
+    ) {
+      updateView(tabValue as CalendarViewType);
+    }
   };
 
-  const handleDaysOptionClick = async (days: number) => {
+  const handleDaysOptionClick = async (days: number): Promise<void> => {
     setStoreDaysCount(days);
     try {
       await setQueryDaysCount(days);
