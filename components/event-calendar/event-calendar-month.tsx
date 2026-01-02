@@ -21,9 +21,10 @@ const DAYS_IN_WEEK = 7;
 interface CalendarMonthProps {
   events: Events[];
   baseDate: Date;
+  journalEntries?: Record<string, { dateKey: string; updatedAt: number }>;
 }
 
-export function EventCalendarMonth({ events, baseDate }: CalendarMonthProps) {
+export function EventCalendarMonth({ events, baseDate, journalEntries }: CalendarMonthProps) {
   const {
     timeFormat,
     firstDayOfWeek,
@@ -109,6 +110,7 @@ export function EventCalendarMonth({ events, baseDate }: CalendarMonthProps) {
             date={date}
             baseDate={baseDate}
             eventsByDate={eventsGroupedByDate}
+            journalEntries={journalEntries}
             locale={localeObj}
             timeFormat={timeFormat}
             monthViewConfig={viewSettings}
