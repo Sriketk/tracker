@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import { CATEGORY_OPTIONS, EVENT_COLORS } from '@/constants/calendar-constant';
+import { EVENT_COLORS } from '@/constants/calendar-constant';
 import { ColorOptionItem } from './ui/color-option-item';
 import { z } from 'zod';
 import { getColorClasses } from '@/lib/event';
@@ -79,12 +79,12 @@ export const EventDetailsForm = memo(
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FormField
               control={form.control}
-              name="startDate"
+              name="date"
               render={({ field }) => (
                 <DateSelector
                   value={field.value}
                   onChange={field.onChange}
-                  label="Start Date"
+                  label="Date"
                   locale={locale}
                   required
                 />
@@ -106,71 +106,24 @@ export const EventDetailsForm = memo(
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FormField
               control={form.control}
-              name="endDate"
-              render={({ field }) => (
-                <DateSelector
-                  value={field.value}
-                  onChange={field.onChange}
-                  label="End Date"
-                  locale={locale}
-                  required
-                />
-              )}
-            />
-            <FormField
-              control={form.control}
               name="endTime"
               render={({ field }) => (
                 <TimeSelector
                   value={field.value}
                   onChange={field.onChange}
-                  label="End Time"
-                  required
+                  label="End Time (optional)"
                 />
               )}
             />
-          </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FormField
               control={form.control}
               name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    Location <span className="text-destructive">*</span>
-                  </FormLabel>
+                  <FormLabel>Location</FormLabel>
                   <FormControl>
-                    <Input placeholder="Location event" {...field} />
+                    <Input placeholder="Location (optional)" {...field} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Category <span className="text-destructive">*</span>
-                  </FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {CATEGORY_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

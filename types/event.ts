@@ -91,6 +91,7 @@ export interface MonthViewConfig {
   eventLimit: number;
   showMoreEventsIndicator: boolean;
   hideOutsideDays: boolean;
+  showJournalIndicators: boolean;
 }
 
 export interface YearViewConfig {
@@ -100,6 +101,7 @@ export interface YearViewConfig {
   showMoreEventsIndicator: boolean;
   enableEventPreview: boolean;
   previewEventsPerMonth: number;
+  showJournalIndicators: boolean;
 }
 
 export interface CalendarViewConfigs {

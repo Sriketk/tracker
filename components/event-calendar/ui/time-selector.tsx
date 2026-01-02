@@ -47,7 +47,12 @@ export const TimeSelector = ({
               <SelectValue placeholder="HH" />
             </SelectTrigger>
           </FormControl>
-          <SelectContent className="h-[150px]">
+          <SelectContent 
+            className="h-[150px]" 
+            position="popper"
+            side="bottom"
+            align="start"
+          >
             {hours.map((h) => (
               <SelectItem key={h} value={h}>
                 {h}
@@ -65,7 +70,12 @@ export const TimeSelector = ({
               <SelectValue placeholder="MM" />
             </SelectTrigger>
           </FormControl>
-          <SelectContent className="h-[150px]">
+          <SelectContent 
+            className="h-[150px]" 
+            position="popper"
+            side="bottom"
+            align="start"
+          >
             {minutes.map((m) => (
               <SelectItem key={m} value={m}>
                 {m}

@@ -41,6 +41,7 @@ const DEFAULT_VIEW_CONFIGS: CalendarViewConfigs = {
     eventLimit: 3,
     showMoreEventsIndicator: true,
     hideOutsideDays: false,
+    showJournalIndicators: true,
   },
   year: {
     showMonthLabels: true,
@@ -49,6 +50,7 @@ const DEFAULT_VIEW_CONFIGS: CalendarViewConfigs = {
     showMoreEventsIndicator: true,
     enableEventPreview: true,
     previewEventsPerMonth: 1,
+    showJournalIndicators: true,
   },
 };
 

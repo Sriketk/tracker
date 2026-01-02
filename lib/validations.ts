@@ -21,35 +21,35 @@ const baseEventSchema = z.object({
 
 export const createEventSchema = z.object({
   title: z.string().min(1).max(256),
-  description: z.string().min(1),
-  startDate: z.date(),
-  endDate: z.date(),
+  description: z.string().optional(),
+  date: z.date(),
   startTime: z.string().regex(timeRegex),
-  endTime: z.string().regex(timeRegex),
-  location: z.string().min(1).max(256),
-  category: z.string().min(1).max(100),
+  endTime: z.string().regex(timeRegex).optional(),
+  location: z.string().min(1).max(256).optional(),
   isRepeating: z.boolean().default(false).optional(),
   repeatingType: z.enum(['daily', 'weekly', 'monthly']).optional(),
   color: z.string().min(1).max(25),
 });
 
-export const eventFormSchema = baseEventSchema
-  .omit({ id: true, createdAt: true, updatedAt: true })
-  .extend({
-    startTime: z.string().regex(timeRegex),
-    endTime: z.string().regex(timeRegex),
-    isRepeating: z.boolean().default(false).optional(),
-    repeatingType: z.enum(['daily', 'weekly', 'monthly']).optional(),
-  })
+export const eventFormSchema = z.object({
+  title: z.string().min(1).max(256),
+  description: z.string().optional(),
+  date: z.date(),
+  startTime: z.string().regex(timeRegex),
+  endTime: z.string().regex(timeRegex).optional(),
+  location: z.string().min(1).max(256).optional(),
+  isRepeating: z.boolean().default(false).optional(),
+  repeatingType: z.enum(['daily', 'weekly', 'monthly']).optional(),
+  color: z.string().min(1).max(25),
+})
   .refine((data) => !data.isRepeating || data.repeatingType, {
     message: 'Repeating type is required for repeating events',
     path: ['repeatingType'],
   })
   .refine(
     (data) => {
-      if (data.startDate.toDateString() !== data.endDate.toDateString()) {
-        return data.endDate > data.startDate;
-      }
+      // Only validate time order if endTime is provided
+      if (!data.endTime) return true;
       return validateTimeOrder(data.startTime, data.endTime);
     },
     {

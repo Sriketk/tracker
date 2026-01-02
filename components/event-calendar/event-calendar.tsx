@@ -19,12 +19,14 @@ interface EventCalendarProps {
   events: Events[];
   initialDate: Date;
   disabledViews?: CalendarViewType[];
+  journalEntries?: Record<string, { dateKey: string; updatedAt: number }>;
 }
 
 export function EventCalendar({
   initialDate,
   events,
   disabledViews = [],
+  journalEntries,
 }: EventCalendarProps) {
   const { viewMode, currentView, daysCount } = useEventCalendarStore(
     useShallow((state) => ({
@@ -52,13 +54,13 @@ export function EventCalendar({
       case 'week':
         return <EventCalendarWeek events={events} currentDate={initialDate} />;
       case 'month':
-        return <EventCalendarMonth events={events} baseDate={initialDate} />;
+        return <EventCalendarMonth events={events} baseDate={initialDate} journalEntries={journalEntries} />;
       case 'year':
-        return <EventCalendarYear events={events} currentDate={initialDate} />;
+        return <EventCalendarYear events={events} currentDate={initialDate} journalEntries={journalEntries} />;
       default:
         return <EventCalendarDay events={events} currentDate={initialDate} />;
     }
-  }, [currentView, daysCount, events, initialDate, viewMode]);
+  }, [currentView, daysCount, events, initialDate, viewMode, journalEntries]);
 
   return (
     <>

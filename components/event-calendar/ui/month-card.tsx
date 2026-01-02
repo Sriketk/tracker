@@ -20,7 +20,7 @@ import {
   startOfWeek,
   Locale,
 } from 'date-fns';
-import { ChevronRight, Plus } from 'lucide-react';
+import { ChevronRight, Plus, BookOpen } from 'lucide-react';
 import { memo, useMemo } from 'react';
 import { Events, YearViewConfig } from '@/types/event';
 import { useRouter } from 'next/navigation';
@@ -28,6 +28,7 @@ import { useRouter } from 'next/navigation';
 interface MonthCardProps {
   month: Date;
   eventsByDate: Record<string, Events[]>;
+  journalEntries?: Record<string, { dateKey: string; updatedAt: number }>;
   eventCount: number;
   yearViewConfig: YearViewConfig;
   locale?: Locale;
@@ -40,21 +41,29 @@ interface MonthCardProps {
 interface DayCellProps {
   day: Date;
   events: Events[];
+  hasJournalEntry?: boolean;
+  showJournalIndicators?: boolean;
   isToday: boolean;
   onLeftClick: () => void;
   onRightClick: () => void;
 }
 
-const DayCell = memo(({ day, events, isToday, onLeftClick, onRightClick }: DayCellProps) => {
+const DayCell = memo(({ day, events, hasJournalEntry, showJournalIndicators, isToday, onLeftClick, onRightClick }: DayCellProps) => {
   const hasDayEvents = events.length > 0;
 
-  const tooltipContent = useMemo(
-    () =>
-      hasDayEvents
-        ? `${events.length} Event on ${format(day, 'd MMMM yyyy')}`
-        : format(day, 'd MMMM yyyy'),
-    [hasDayEvents, events.length, day],
-  );
+  const tooltipContent = useMemo(() => {
+    const parts: string[] = [];
+    if (hasDayEvents) {
+      parts.push(`${events.length} Event${events.length > 1 ? 's' : ''}`);
+    }
+    if (hasJournalEntry) {
+      parts.push('Journal entry');
+    }
+    if (parts.length === 0) {
+      return format(day, 'd MMMM yyyy');
+    }
+    return `${parts.join(' • ')} on ${format(day, 'd MMMM yyyy')}`;
+  }, [hasDayEvents, hasJournalEntry, events.length, day]);
 
   const handleRightClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -74,9 +83,14 @@ const DayCell = memo(({ day, events, isToday, onLeftClick, onRightClick }: DayCe
           onContextMenu={handleRightClick}
         >
           {getDate(day)}
-          {hasDayEvents && !isToday && (
-            <span className="bg-primary absolute -bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 transform rounded-full" />
-          )}
+          <div className="absolute -bottom-0.5 left-1/2 flex -translate-x-1/2 transform items-center gap-0.5">
+            {hasDayEvents && !isToday && (
+              <span className="bg-primary h-1 w-1 rounded-full" />
+            )}
+            {showJournalIndicators && hasJournalEntry && (
+              <BookOpen className="h-2.5 w-2.5 text-purple-500 dark:text-purple-400" />
+            )}
+          </div>
         </button>
       </TooltipTrigger>
       <TooltipContent side="top" align="center">
@@ -92,12 +106,16 @@ const MonthDaysGrid = memo(
   ({
     month,
     eventsByDate,
+    journalEntries,
+    showJournalIndicators,
     onDateClick,
     onQuickAdd,
     locale,
   }: {
     month: Date;
     eventsByDate: Record<string, Events[]>;
+    journalEntries?: Record<string, { dateKey: string; updatedAt: number }>;
+    showJournalIndicators?: boolean;
     onDateClick: (date: Date) => void;
     onQuickAdd: (date: Date) => void;
     locale?: Locale;
@@ -142,6 +160,8 @@ const MonthDaysGrid = memo(
               key={dateKey}
               day={day}
               events={isCurrentMonth ? (eventsByDate[dateKey] || []) : []}
+              hasJournalEntry={isCurrentMonth && journalEntries?.[dateKey] !== undefined}
+              showJournalIndicators={showJournalIndicators}
               isToday={isSameDay(day, new Date())}
               onLeftClick={() => router.push(`/day/${dateKey}`)}
               onRightClick={() => onQuickAdd(day)}
@@ -159,6 +179,7 @@ const MonthCard = memo(
   ({
     month,
     eventsByDate,
+    journalEntries,
     eventCount,
     yearViewConfig,
     locale,
@@ -226,6 +247,8 @@ const MonthCard = memo(
         <MonthDaysGrid
           month={month}
           eventsByDate={eventsByDate}
+          journalEntries={journalEntries}
+          showJournalIndicators={yearViewConfig.showJournalIndicators}
           onDateClick={onDateClick}
           onQuickAdd={onQuickAdd}
           locale={locale}

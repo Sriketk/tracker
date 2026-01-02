@@ -19,9 +19,10 @@ import { getLocaleFromCode } from '@/lib/event';
 interface CalendarYearProps {
   events: Events[];
   currentDate: Date;
+  journalEntries?: Record<string, { dateKey: string; updatedAt: number }>;
 }
 
-export function EventCalendarYear({ events, currentDate }: CalendarYearProps) {
+export function EventCalendarYear({ events, currentDate, journalEntries }: CalendarYearProps) {
   const {
     openQuickAddDialog,
     openEventDialog,
@@ -111,6 +112,7 @@ export function EventCalendarYear({ events, currentDate }: CalendarYearProps) {
           key={getMonth(month)}
           month={month}
           eventsByDate={eventsByDate}
+          journalEntries={journalEntries}
           eventCount={eventCountByMonth[getMonth(month)]}
           yearViewConfig={viewSettings}
           locale={localeObj}

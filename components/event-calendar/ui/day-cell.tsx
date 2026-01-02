@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock, Plus } from 'lucide-react';
+import { Clock, Plus, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatTimeDisplay } from '@/lib/date';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ interface DayCellProps {
   date: Date;
   baseDate: Date;
   eventsByDate: Record<string, Events[]>;
+  journalEntries?: Record<string, { dateKey: string; updatedAt: number }>;
   locale: Locale;
   timeFormat: TimeFormatType;
   monthViewConfig: MonthViewConfig;
@@ -27,6 +28,7 @@ export function DayCell({
   date,
   baseDate,
   eventsByDate,
+  journalEntries,
   locale,
   timeFormat,
   monthViewConfig,
@@ -39,6 +41,7 @@ export function DayCell({
   const router = useRouter();
   const dateKey = format(date, 'yyyy-MM-dd');
   const dayEvents = eventsByDate[dateKey] || [];
+  const hasJournalEntry = journalEntries?.[dateKey] !== undefined;
   const isToday = isSameDay(date, new Date());
   const isWithinMonth = isSameMonth(date, baseDate);
   const isEmpty = dayEvents.length === 0;
@@ -86,15 +89,20 @@ export function DayCell({
       onFocus={() => onFocusDate(date)}
     >
       <div className="mb-0 flex items-center justify-between sm:mb-1">
-        <span
-          className={cn(
-            'flex h-5 w-5 items-center justify-center rounded-full border text-xs font-medium sm:h-6 sm:w-6',
-            isToday && 'bg-blue-500 text-white',
-            !isWithinMonth && 'text-muted-foreground',
+        <div className="flex items-center gap-1">
+          <span
+            className={cn(
+              'flex h-5 w-5 items-center justify-center rounded-full border text-xs font-medium sm:h-6 sm:w-6',
+              isToday && 'bg-blue-500 text-white',
+              !isWithinMonth && 'text-muted-foreground',
+            )}
+          >
+            {format(date, 'd', { locale })}
+          </span>
+          {monthViewConfig.showJournalIndicators && hasJournalEntry && isWithinMonth && (
+            <BookOpen className="h-3 w-3 text-purple-500 dark:text-purple-400" aria-label="Journal entry" />
           )}
-        >
-          {format(date, 'd', { locale })}
-        </span>
+        </div>
         {!monthViewConfig.hideOutsideDays && (
           <span className="text-muted-foreground hidden text-xs md:block">
             {format(date, 'E', { locale })}

@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as events from "../events.js";
 import type * as journal from "../journal.js";
 import type * as tasks from "../tasks.js";
 
@@ -18,6 +19,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  events: typeof events;
   journal: typeof journal;
   tasks: typeof tasks;
 }>;

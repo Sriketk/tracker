@@ -602,6 +602,17 @@ const CalendarSettings = ({
           }
         />
       </ConfigRow>
+      <ConfigRow
+        label="Show journal indicators"
+        description="Display journal entry indicators on calendar days"
+      >
+        <Switch
+          checked={viewSettings.month.showJournalIndicators}
+          onCheckedChange={(checked) =>
+            updateMonthViewConfig({ showJournalIndicators: checked })
+          }
+        />
+      </ConfigRow>
     </ConfigSection>
     <Separator />
     <ConfigSection title="Year View" icon={Sun}>
@@ -681,6 +692,17 @@ const CalendarSettings = ({
           </ConfigRow>
         </>
       )}
+      <ConfigRow
+        label="Show journal indicators"
+        description="Display journal entry indicators in year view"
+      >
+        <Switch
+          checked={viewSettings.year.showJournalIndicators}
+          onCheckedChange={(checked) =>
+            updateYearViewConfig({ showJournalIndicators: checked })
+          }
+        />
+      </ConfigRow>
     </ConfigSection>
   </div>
 );

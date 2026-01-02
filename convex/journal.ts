@@ -16,6 +16,36 @@ export const get = query({
   },
 });
 
+// Get journal entries for a date range
+export const getByDateRange = query({
+  args: {
+    startDate: v.string(), // YYYY-MM-DD format
+    endDate: v.string(), // YYYY-MM-DD format
+  },
+  handler: async (ctx, args) => {
+    const entries = await ctx.db
+      .query("journalEntries")
+      .withIndex("by_date")
+      .collect();
+    
+    // Filter entries within the date range
+    const filteredEntries = entries.filter((entry) => {
+      return entry.dateKey >= args.startDate && entry.dateKey <= args.endDate;
+    });
+    
+    // Return a map of dateKey -> entry for easy lookup
+    const entriesMap: Record<string, { dateKey: string; updatedAt: number }> = {};
+    filteredEntries.forEach((entry) => {
+      entriesMap[entry.dateKey] = {
+        dateKey: entry.dateKey,
+        updatedAt: entry.updatedAt,
+      };
+    });
+    
+    return entriesMap;
+  },
+});
+
 // Save or update journal entry
 export const save = mutation({
   args: {

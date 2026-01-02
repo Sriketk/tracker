@@ -21,20 +21,21 @@ import { EventDetailsForm } from './event-detail-form';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/shallow';
 import { getLocaleFromCode } from '@/lib/event';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { format, parse } from 'date-fns';
+import { Id } from '@/convex/_generated/dataModel';
 
 const DEFAULT_START_TIME = '09:00';
 const DEFAULT_END_TIME = '10:00';
 const DEFAULT_COLOR = 'bg-red-600';
-const DEFAULT_CATEGORY = 'workshop';
 
 type EventFormValues = z.infer<typeof eventFormSchema>;
 
 const DEFAULT_FORM_VALUES: EventFormValues = {
   title: '',
   description: '',
-  startDate: new Date(),
-  endDate: new Date(),
-  category: DEFAULT_CATEGORY,
+  date: new Date(),
   startTime: DEFAULT_START_TIME,
   endTime: DEFAULT_END_TIME,
   location: '',
@@ -72,6 +73,8 @@ export default function EventDialog() {
 
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState<boolean>(false);
   const isMounted = useIsMounted();
+  const updateEvent = useMutation(api.events.update);
+  const deleteEvent = useMutation(api.events.remove);
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
@@ -82,19 +85,24 @@ export default function EventDialog() {
   useEffect(() => {
     if (selectedEvent) {
       try {
-        const startDate = ensureDate(selectedEvent.startDate);
-        const endDate = ensureDate(selectedEvent.endDate);
+        // Handle both old Events type (with startDate) and new Convex format (with date string)
+        let date: Date;
+        if ('startDate' in selectedEvent && selectedEvent.startDate instanceof Date) {
+          date = ensureDate(selectedEvent.startDate);
+        } else if ('date' in selectedEvent && typeof selectedEvent.date === 'string') {
+          date = parse(selectedEvent.date, 'yyyy-MM-dd', new Date());
+        } else {
+          date = new Date();
+        }
 
         form.reset({
           title: selectedEvent.title || '',
           description: selectedEvent.description || '',
-          startDate,
-          endDate,
-          category: selectedEvent.category || DEFAULT_CATEGORY,
+          date,
           startTime: selectedEvent.startTime || DEFAULT_START_TIME,
           endTime: selectedEvent.endTime || DEFAULT_END_TIME,
           location: selectedEvent.location || '',
-          color: selectedEvent.color,
+          color: selectedEvent.color || DEFAULT_COLOR,
         });
       } catch (error) {
         console.error('Error resetting form with event data:', error);
@@ -105,17 +113,44 @@ export default function EventDialog() {
   const handleUpdate = async (values: EventFormValues) => {
     if (!selectedEvent?.id) return;
 
-    toast.success('DEMO: Update event UI triggered', {
-      description:
-        'Override this handler with your actual update logic. Requires connection to your data source.',
-    });
+    try {
+      const eventId = selectedEvent.id as Id<'events'>;
+      const dateString = format(values.date, 'yyyy-MM-dd');
+
+      await updateEvent({
+        id: eventId,
+        title: values.title,
+        description: values.description,
+        date: dateString,
+        startTime: values.startTime,
+        endTime: values.endTime,
+        location: values.location,
+        color: values.color,
+        isRepeating: values.isRepeating,
+        repeatingType: values.repeatingType,
+      });
+
+      toast.success('Event updated successfully');
+      closeEventDialog();
+    } catch (error) {
+      console.error('Error updating event:', error);
+      toast.error('Failed to update event. Please try again.');
+    }
   };
 
   const handleDeleteEvent = async () => {
-    toast.success('DEMO: Delete event UI triggered', {
-      description:
-        'Replace this placeholder with real deletion logic. Ensure proper data persistence.',
-    });
+    if (!selectedEvent?.id) return;
+
+    try {
+      const eventId = selectedEvent.id as Id<'events'>;
+      await deleteEvent({ id: eventId });
+      toast.success('Event deleted successfully');
+      setIsDeleteAlertOpen(false);
+      closeEventDialog();
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast.error('Failed to delete event. Please try again.');
+    }
   };
 
   if (!isMounted) return null;

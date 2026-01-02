@@ -24,15 +24,16 @@ import { EVENT_DEFAULTS } from '@/constants/calendar-constant';
 import { useShallow } from 'zustand/shallow';
 import { toast } from 'sonner';
 import { getLocaleFromCode } from '@/lib/event';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { format } from 'date-fns';
 
 type EventFormValues = z.infer<typeof createEventSchema>;
 
 const DEFAULT_FORM_VALUES: EventFormValues = {
   title: '',
   description: '',
-  startDate: new Date(),
-  endDate: new Date(),
-  category: EVENT_DEFAULTS.CATEGORY,
+  date: new Date(),
   startTime: EVENT_DEFAULTS.START_TIME,
   endTime: EVENT_DEFAULTS.END_TIME,
   location: '',
@@ -63,26 +64,47 @@ export default function EventCreateDialog() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const localeObj = getLocaleFromCode(locale);
+  const createEvent = useMutation(api.events.create);
 
   const watchedValues = form.watch();
 
   const handleSubmit = async (formValues: EventFormValues) => {
     setIsSubmitting(true);
 
-    toast.success('DEMO: Create event UI triggered', {
-      description:
-        'Override this handler to implement actual event creation. Connect to your backend or state management.',
-    });
+    try {
+      // Format date to YYYY-MM-DD string
+      const dateString = format(formValues.date, 'yyyy-MM-dd');
+
+      await createEvent({
+        title: formValues.title,
+        description: formValues.description,
+        date: dateString,
+        startTime: formValues.startTime,
+        endTime: formValues.endTime,
+        location: formValues.location,
+        color: formValues.color,
+        isRepeating: formValues.isRepeating,
+        repeatingType: formValues.repeatingType,
+      });
+
+      toast.success('Event created successfully');
+      form.reset(DEFAULT_FORM_VALUES);
+      closeQuickAddDialog();
+    } catch (error) {
+      console.error('Error creating event:', error);
+      toast.error('Failed to create event. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   useEffect(() => {
     if (isQuickAddDialogOpen && quickAddData.date) {
       form.reset({
         ...DEFAULT_FORM_VALUES,
-        startDate: quickAddData.date,
-        endDate: quickAddData.date,
-        startTime: quickAddData.startTime,
-        endTime: quickAddData.endTime,
+        date: quickAddData.date,
+        startTime: quickAddData.startTime || EVENT_DEFAULTS.START_TIME,
+        endTime: quickAddData.endTime || EVENT_DEFAULTS.END_TIME,
       });
     }
   }, [isQuickAddDialogOpen, quickAddData, form]);
