@@ -5,10 +5,12 @@ import { parse, format, isValid } from 'date-fns';
 import { NovelEditor } from '@/components/journal/novel-editor';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Check } from 'lucide-react';
+import { ArrowLeft, Loader2, Check, Lock, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useState, useEffect } from 'react';
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyMedia } from '@/components/ui/empty';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { isNotToday, isFutureDate, daysBetween } from '@/lib/date';
 
 export default function DayJournalPage() {
   const params = useParams();
@@ -17,7 +19,6 @@ export default function DayJournalPage() {
   const [parsedDate, setParsedDate] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
-  const [isFadingOut, setIsFadingOut] = useState(false);
 
   // Parse and validate date from route params
   useEffect(() => {
@@ -39,6 +40,23 @@ export default function DayJournalPage() {
     setParsedDate(date);
     setIsValidDate(true);
   }, [params.date, router]);
+
+  // Calculate if date is locked (not today - must be called before early return for hook order)
+  const isLocked = useMemo(() => {
+    if (!parsedDate) return false;
+    return isNotToday(parsedDate);
+  }, [parsedDate]);
+
+  // Calculate if date is in the future and days until it
+  const isFuture = useMemo(() => {
+    if (!parsedDate) return false;
+    return isFutureDate(parsedDate);
+  }, [parsedDate]);
+
+  const daysUntil = useMemo(() => {
+    if (!parsedDate || !isFuture) return 0;
+    return daysBetween(new Date(), parsedDate);
+  }, [parsedDate, isFuture]);
 
   if (!isValidDate || !parsedDate) {
     return (
@@ -66,7 +84,12 @@ export default function DayJournalPage() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="mx-auto flex max-w-4xl items-end justify-between">
-              <h1 className="text-[2.25rem] leading-10 font-normal">{formattedDate}</h1>
+              <div className="flex items-end gap-3">
+                <h1 className="text-[2.25rem] leading-10 font-normal">{formattedDate}</h1>
+                {isLocked && (
+                  <Lock className="h-5 w-5 text-muted-foreground mb-1" aria-label="Read-only - Not today" />
+                )}
+              </div>
               <div className="flex items-end gap-3">
                 <AnimatePresence mode="wait">
                   {isSaving && (
@@ -104,21 +127,35 @@ export default function DayJournalPage() {
           </header>
           <main className="container flex-1 pb-6">
             <div className="mx-auto max-w-4xl">
-              <NovelEditor 
-                dateKey={dateKey} 
-                onSaveStatusChange={(saving, saved) => {
-                  setIsSaving(saving);
-                  if (saved) {
-                    setIsSaved(true);
-                    // Hide saved icon after 2 seconds
-                    setTimeout(() => {
+              {isFuture ? (
+                <Empty className="min-h-[500px]">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <Calendar className="h-6 w-6" />
+                    </EmptyMedia>
+                    <EmptyTitle>
+                      You have to wait {daysUntil} {daysUntil === 1 ? 'day' : 'days'} to edit this entry.
+                    </EmptyTitle> 
+                  </EmptyHeader>
+                </Empty>
+              ) : (
+                <NovelEditor 
+                  dateKey={dateKey}
+                  editable={!isLocked}
+                  onSaveStatusChange={(saving, saved) => {
+                    setIsSaving(saving);
+                    if (saved) {
+                      setIsSaved(true);
+                      // Hide saved icon after 2 seconds
+                      setTimeout(() => {
+                        setIsSaved(false);
+                      }, 2000);
+                    } else {
                       setIsSaved(false);
-                    }, 2000);
-                  } else {
-                    setIsSaved(false);
-                  }
-                }}
-              />
+                    }
+                  }}
+                />
+              )}
             </div>
           </main>
         </div>

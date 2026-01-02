@@ -313,14 +313,18 @@ const slashCommand = Command.configure({
   },
 });
 
-const defaultExtensions = [
-  GlobalDragHandle.configure({
-    dragHandleWidth: 20,
-    scrollTreshold: 100,
-  }),
-  AutoJoiner.configure({
-    elementsToJoin: ['bulletList', 'orderedList'],
-  }),
+const getExtensions = (editable: boolean) => [
+  ...(editable
+    ? [
+        GlobalDragHandle.configure({
+          dragHandleWidth: 20,
+          scrollTreshold: 100,
+        }),
+        AutoJoiner.configure({
+          elementsToJoin: ['bulletList', 'orderedList'],
+        }),
+      ]
+    : []),
   starterKit,
   TextStyle,
   Color,
@@ -339,6 +343,7 @@ interface NovelEditorProps {
   onUpdate?: (content: JSONContent) => void;
   onSaveStatusChange?: (isSaving: boolean, isSaved: boolean) => void;
   dateKey: string; // YYYY-MM-DD format for localStorage key
+  editable?: boolean; // Whether the editor is editable (default: true)
 }
 
 export function NovelEditor({
@@ -346,6 +351,7 @@ export function NovelEditor({
   onUpdate,
   onSaveStatusChange,
   dateKey,
+  editable = true,
 }: NovelEditorProps) {
   const [openNode, setOpenNode] = useState(false);
   const [openLink, setOpenLink] = useState(false);
@@ -382,6 +388,9 @@ export function NovelEditor({
   // Save to Convex when content changes (debounced)
   const handleUpdate = useCallback(
     ({ editor }: { editor: any }) => {
+      // Don't save if editor is read-only
+      if (!editable) return;
+      
       const json = editor.getJSON();
       
       // Clear existing timer
@@ -413,7 +422,7 @@ export function NovelEditor({
         }
       }, 1000);
     },
-    [dateKey, saveJournal, onUpdate, onSaveStatusChange],
+    [dateKey, saveJournal, onUpdate, onSaveStatusChange, editable],
   );
 
   // Cleanup timer on unmount
@@ -425,33 +434,55 @@ export function NovelEditor({
     };
   }, []);
 
+  // Store editor reference to update editable state
+  const editorRef = useRef<any>(null);
+
+  // Update editor editable state when prop changes
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.setEditable(editable);
+    }
+  }, [editable]);
+
   return (
     <EditorRoot>
       <EditorContent
         key={`${dateKey}-${journalEntry?._id || 'new'}`} // Force re-render when dateKey or entry changes
-        extensions={defaultExtensions}
+        extensions={getExtensions(editable)}
         initialContent={content || defaultContent}
         onCreate={({ editor }) => {
-          // Auto-focus the editor when it's created
-          setTimeout(() => {
-            editor.commands.focus();
-          }, 0);
+          // Store editor reference
+          editorRef.current = editor;
+          // Set editor to read-only if not editable
+          editor.setEditable(editable);
+          // Auto-focus the editor when it's created (only if editable)
+          if (editable) {
+            setTimeout(() => {
+              editor.commands.focus();
+            }, 0);
+          }
         }}
         onUpdate={handleUpdate}
+        editable={editable}
         editorProps={{
           handleDOMEvents: {
             keydown: (_view, event) => handleCommandNavigation(event),
           },
-          handlePaste: (view, event) => handleImagePaste(view, event, uploadFn),
-          handleDrop: (view, event, _slice, moved) =>
-            handleImageDrop(view, event, moved, uploadFn),
+          handlePaste: editable
+            ? (view, event) => handleImagePaste(view, event, uploadFn)
+            : undefined,
+          handleDrop: editable
+            ? (view, event, _slice, moved) =>
+                handleImageDrop(view, event, moved, uploadFn)
+            : undefined,
           attributes: {
-            class: `prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full`,
+            class: `prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full ${!editable ? 'cursor-default' : ''}`,
           },
         }}
         className="min-h-[500px] w-full border-0 novel-editor"
       >
-        <EditorCommand className="z-50 h-auto max-h-[330px] w-72 overflow-y-auto rounded-md border border-muted bg-background px-1 py-2 shadow-md transition-all">
+        {editable && (
+          <EditorCommand className="z-50 h-auto max-h-[330px] w-72 overflow-y-auto rounded-md border border-muted bg-background px-1 py-2 shadow-md transition-all">
           <EditorCommandEmpty className="px-2 text-muted-foreground">
             No results
           </EditorCommandEmpty>
@@ -480,17 +511,20 @@ export function NovelEditor({
             ))}
           </EditorCommandList>
         </EditorCommand>
-        <EditorBubble
-          tippyOptions={{
-            placement: 'top',
-          }}
-          className="flex w-fit max-w-[90vw] overflow-hidden rounded border border-muted bg-background shadow-xl"
-        >
-          <NodeSelector open={openNode} onOpenChange={setOpenNode} />
-          <LinkSelector open={openLink} onOpenChange={setOpenLink} />
-          <TextButtons />
-          <ColorSelector open={openColor} onOpenChange={setOpenColor} />
-        </EditorBubble>
+        )}
+        {editable && (
+          <EditorBubble
+            tippyOptions={{
+              placement: 'top',
+            }}
+            className="flex w-fit max-w-[90vw] overflow-hidden rounded border border-muted bg-background shadow-xl"
+          >
+            <NodeSelector open={openNode} onOpenChange={setOpenNode} />
+            <LinkSelector open={openLink} onOpenChange={setOpenLink} />
+            <TextButtons />
+            <ColorSelector open={openColor} onOpenChange={setOpenColor} />
+          </EditorBubble>
+        )}
         <ImageResizer />
       </EditorContent>
     </EditorRoot>

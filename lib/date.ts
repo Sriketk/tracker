@@ -395,6 +395,76 @@ export const isDifferentDay = (date1: Date, date2: Date): boolean => {
   return !isSameDay(date1, date2);
 };
 
+/**
+ * Checks if a date is in the past (before today)
+ * @memberof DateComparison
+ * @param {Date} date - Date to check
+ * @returns {boolean} True if date is before today
+ *
+ * @example
+ * isPastDate(new Date('2025-01-01')); // true (if today is after Jan 1, 2025)
+ * isPastDate(new Date()); // false (today is not in the past)
+ */
+export const isPastDate = (date: Date): boolean => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const compareDate = new Date(date);
+  compareDate.setHours(0, 0, 0, 0);
+  return compareDate < today;
+};
+
+/**
+ * Checks if a date is in the future (after today)
+ * @memberof DateComparison
+ * @param {Date} date - Date to check
+ * @returns {boolean} True if date is after today
+ *
+ * @example
+ * isFutureDate(new Date('2025-12-31')); // true (if today is before Dec 31, 2025)
+ * isFutureDate(new Date()); // false (today is not in the future)
+ */
+export const isFutureDate = (date: Date): boolean => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const compareDate = new Date(date);
+  compareDate.setHours(0, 0, 0, 0);
+  return compareDate > today;
+};
+
+/**
+ * Checks if a date is not today (either past or future)
+ * @memberof DateComparison
+ * @param {Date} date - Date to check
+ * @returns {boolean} True if date is not today
+ *
+ * @example
+ * isNotToday(new Date('2025-01-01')); // true (if today is not Jan 1, 2025)
+ * isNotToday(new Date()); // false (today is today)
+ */
+export const isNotToday = (date: Date): boolean => {
+  return !isSameDay(date, new Date());
+};
+
+/**
+ * Calculates the number of days between two dates
+ * @memberof DateComparison
+ * @param {Date} date1 - First date
+ * @param {Date} date2 - Second date
+ * @returns {number} Number of days between the dates (positive if date2 > date1)
+ *
+ * @example
+ * daysBetween(new Date('2025-01-01'), new Date('2025-01-05')); // 4
+ * daysBetween(new Date('2025-01-05'), new Date('2025-01-01')); // -4
+ */
+export const daysBetween = (date1: Date, date2: Date): number => {
+  const d1 = new Date(date1);
+  d1.setHours(0, 0, 0, 0);
+  const d2 = new Date(date2);
+  d2.setHours(0, 0, 0, 0);
+  const diffTime = d2.getTime() - d1.getTime();
+  return Math.round(diffTime / (1000 * 60 * 60 * 24));
+};
+
 import type { Locale } from 'date-fns';
 
 const dayOfWeekCache = new Map<
