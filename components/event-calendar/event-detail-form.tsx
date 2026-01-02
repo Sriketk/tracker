@@ -109,7 +109,7 @@ export const EventDetailsForm = memo(
               name="endTime"
               render={({ field }) => (
                 <TimeSelector
-                  value={field.value}
+                  value={field.value || ''}
                   onChange={field.onChange}
                   label="End Time (optional)"
                 />
