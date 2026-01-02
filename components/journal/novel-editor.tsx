@@ -29,6 +29,7 @@ import {
   createImageUpload,
   handleImageDrop,
   handleImagePaste,
+  ImageResizer,
 } from 'novel';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
@@ -104,8 +105,9 @@ const tiptapImage = TiptapImage.extend({
   },
 }).configure({
   allowBase64: true,
+  inline: false,
   HTMLAttributes: {
-    class: cx('rounded-lg border border-muted'),
+    class: cx('rounded-lg border border-muted cursor-pointer'),
   },
 });
 
@@ -480,6 +482,7 @@ export function NovelEditor({
           <TextButtons />
           <ColorSelector open={openColor} onOpenChange={setOpenColor} />
         </EditorBubble>
+        <ImageResizer />
       </EditorContent>
     </EditorRoot>
   );

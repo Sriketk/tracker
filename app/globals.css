@@ -364,3 +364,28 @@ ul[data-type="taskList"] li[data-checked="true"] > div > p {
   opacity: 0.5;
 }
 
+/* Image editing styles */
+.prose img {
+  cursor: pointer;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.prose img:hover {
+  opacity: 0.9;
+}
+
+/* Image resizer styles */
+.drag-handle {
+  cursor: grab;
+  opacity: 0.5;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.drag-handle:hover {
+  opacity: 1;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
