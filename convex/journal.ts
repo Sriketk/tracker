@@ -8,7 +8,7 @@ import { v } from "convex/values";
  */
 const jsonContentValidator = v.union(
   v.object({
-    type: v.string(),
+    type: v.optional(v.string()), // Optional: node type (e.g., 'doc', 'paragraph', 'heading')
     content: v.optional(v.array(v.any())), // Recursive: array of JSONContent
     attrs: v.optional(v.any()), // Flexible attributes object
     marks: v.optional(v.array(v.any())), // Array of mark objects
