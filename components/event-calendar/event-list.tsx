@@ -105,7 +105,7 @@ export function EventsList({ events, currentDate }: EventsListProps) {
     currentView,
     timeFormat,
     localeObj,
-  );
+  ) as Array<{ key: string; title: string; events: Events[] }>;
 
   const handleEventClick = useCallback(
     (event: Events) => {

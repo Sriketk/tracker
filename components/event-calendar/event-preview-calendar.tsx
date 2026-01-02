@@ -116,12 +116,12 @@ export const EventPreviewCalendar = ({
                     <Clock className="mr-1 h-3 w-3" />
                     <span>
                       {formatTimeDisplay(watchedValues.startTime, timeFormat)} -{' '}
-                      {formatTimeDisplay(watchedValues.endTime, timeFormat)}
+                      {formatTimeDisplay(watchedValues.endTime || '', timeFormat)}
                       <span className="ml-1">
                         (
                         {calculateDuration(
                           watchedValues.startTime,
-                          watchedValues.endTime,
+                          watchedValues.endTime || '',
                         )}
                         )
                       </span>
@@ -156,8 +156,8 @@ export const EventPreviewCalendar = ({
                 <CalendarIcon className="text-muted-foreground mt-0.5 h-4 w-4 flex-shrink-0" />
                 <div>
                   <p className="font-medium">
-                    {watchedValues.startDate
-                      ? format(watchedValues.startDate, 'EEEE, MMMM d, yyyy', {
+                    {watchedValues.date
+                      ? format(watchedValues.date, 'EEEE, MMMM d, yyyy', { 
                           locale,
                         })
                       : '-'}
@@ -193,12 +193,12 @@ export const EventPreviewCalendar = ({
                   </div>
                 </div>
               )}
-              {watchedValues.category && (
+              {watchedValues.repeatingType && (
                 <div className="flex items-start gap-3">
                   <Tag className="text-muted-foreground mt-0.5 h-4 w-4 flex-shrink-0" />
                   <div>
                     <Badge variant="outline" className="capitalize">
-                      {getCategoryLabel(watchedValues.category)}
+                      {getCategoryLabel(watchedValues.repeatingType || '')}
                     </Badge>
                     <p className="text-muted-foreground mt-1 text-sm">
                       Category
