@@ -33,6 +33,8 @@ import {
 } from 'novel';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
+import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
+import AutoJoiner from 'tiptap-extension-auto-joiner';
 import { cx } from 'class-variance-authority';
 import type { JSONContent } from 'novel';
 import {
@@ -312,6 +314,13 @@ const slashCommand = Command.configure({
 });
 
 const defaultExtensions = [
+  GlobalDragHandle.configure({
+    dragHandleWidth: 20,
+    scrollTreshold: 100,
+  }),
+  AutoJoiner.configure({
+    elementsToJoin: ['bulletList', 'orderedList'],
+  }),
   starterKit,
   TextStyle,
   Color,
