@@ -141,7 +141,10 @@ export function DayCell({
               variant="ghost"
               size="sm"
               className="bg-muted hover:bg-muted/90 h-1.5 w-full gap-1 truncate rounded p-2 text-xs sm:mt-auto sm:h-5 sm:p-5 sm:px-1"
-              onClick={() => onShowDayEvents(date)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onShowDayEvents(date);
+              }}
             >
               <Plus className="h-1.5 w-1.5" />
               <span className="hidden sm:block">

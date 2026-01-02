@@ -32,6 +32,26 @@ export const get = query({
   },
 });
 
+// Helper function to check if journal content has meaningful content (not just default empty structure)
+function hasMeaningfulContent(content: any): boolean {
+  if (!content || !content.content || !Array.isArray(content.content)) {
+    return false;
+  }
+
+  // Check if any node has text content
+  const hasText = (node: any): boolean => {
+    if (node.text && node.text.trim().length > 0) {
+      return true;
+    }
+    if (node.content && Array.isArray(node.content)) {
+      return node.content.some(hasText);
+    }
+    return false;
+  };
+
+  return content.content.some(hasText);
+}
+
 // Get journal entries for a date range
 export const getByDateRange = query({
   args: {
@@ -50,12 +70,15 @@ export const getByDateRange = query({
     });
     
     // Return a map of dateKey -> entry for easy lookup
+    // Only include entries with meaningful content
     const entriesMap: Record<string, { dateKey: string; updatedAt: number }> = {};
     filteredEntries.forEach((entry) => {
-      entriesMap[entry.dateKey] = {
-        dateKey: entry.dateKey,
-        updatedAt: entry.updatedAt,
-      };
+      if (hasMeaningfulContent(entry.content)) {
+        entriesMap[entry.dateKey] = {
+          dateKey: entry.dateKey,
+          updatedAt: entry.updatedAt,
+        };
+      }
     });
     
     return entriesMap;
