@@ -1,4 +1,4 @@
-import { EventTypes } from '@/db/schema';
+import { Events } from '@/types/event';
 import { enUS, enGB, id, es, fr, de, ja, ko } from 'date-fns/locale';
 
 export const EVENT_DEFAULTS = {
@@ -61,7 +61,7 @@ export const demoEvents = [
     createdAt: new Date(),
     updatedAt: new Date(),
   },
-] as EventTypes[];
+] as Events[];
 
 export const LOCALES = [
   { value: 'en-US', label: 'English (US)', locale: enUS },

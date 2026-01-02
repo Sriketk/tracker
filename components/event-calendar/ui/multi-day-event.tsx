@@ -2,22 +2,22 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { memo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { EventTypes } from '@/db/schema';
+import { Events } from '@/types/event';
 import { getColorClasses } from '@/lib/event';
 import { formatTimeDisplay, calculateDuration } from '@/lib/date';
 
 interface MultiDayEventProps {
-  event: EventTypes;
+  event: Events;
   startIndex: number;
   endIndex: number;
   row: number;
-  onClick: (event: EventTypes) => void;
+  onClick: (event: Events) => void;
   daysCount: number;
   multiDayRowHeight: number;
 }
 
 interface MultiDayEventRowType {
-  event: EventTypes;
+  event: Events;
   startIndex: number;
   endIndex: number;
   row: number;
@@ -26,7 +26,7 @@ interface MultiDayEventRowType {
 interface MultiDayEventSectionProps {
   rows: MultiDayEventRowType[];
   daysInWeek: Date[];
-  showEventDetail: (event: EventTypes) => void;
+  showEventDetail: (event: Events) => void;
   multiDayRowHeight: number;
   isExpanded?: boolean;
 }

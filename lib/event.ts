@@ -14,7 +14,7 @@ import {
   TimeFormatType,
 } from '@/types/event';
 import { CATEGORY_OPTIONS, LOCALES } from '@/constants/calendar-constant';
-import { EventTypes } from '@/db/schema';
+import { Events } from '@/types/event';
 import { EVENT_VIEW_CONFIG } from '@/components/event-calendar/event-list';
 import { convertTimeToMinutes, formatTimeDisplay, isSameDay } from './date';
 import { enUS } from 'date-fns/locale';
@@ -89,10 +89,10 @@ export function useWeekDays(
  * @example
  * const { singleDayEvents, multiDayEvents } = useFilteredEvents(events, weekDays);
  */
-export function useFilteredEvents(events: EventTypes[], daysInWeek: Date[]) {
+export function useFilteredEvents(events: Events[], daysInWeek: Date[]) {
   return useMemo(() => {
-    const singleDayEvents: EventTypes[] = [];
-    const multiDayEvents: EventTypes[] = [];
+    const singleDayEvents: Events[] = [];
+    const multiDayEvents: Events[] = [];
 
     const [firstDayOfWeek, lastDayOfWeek] = [daysInWeek[0], daysInWeek[6]];
 
@@ -136,7 +136,7 @@ export function useFilteredEvents(events: EventTypes[], daysInWeek: Date[]) {
  * const eventPositions = useEventPositions(singleDayEvents, weekDays, 60);
  */
 export function useEventPositions(
-  singleDayEvents: EventTypes[],
+  singleDayEvents: Events[],
   daysInWeek: Date[],
   hourHeight: number,
 ) {
@@ -144,7 +144,7 @@ export function useEventPositions(
     const positions: Record<string, EventPosition> = {};
     const dayEvents: Record<
       number,
-      Array<{ event: EventTypes; start: number; end: number }>
+      Array<{ event: Events; start: number; end: number }>
     > = {};
 
     // Initialize day events structure
@@ -224,11 +224,11 @@ export function useEventPositions(
  * const multiDayRows = useMultiDayEventRows(multiDayEvents, weekDays);
  */
 export function useMultiDayEventRows(
-  multiDayEvents: EventTypes[],
+  multiDayEvents: Events[],
   daysInWeek: Date[],
 ) {
   return useMemo(() => {
-    const rows: Array<MultiDayEventRowType & { event: EventTypes }> = [];
+    const rows: Array<MultiDayEventRowType & { event: Events }> = [];
     const [weekStart, weekEnd] = [daysInWeek[0], daysInWeek[6]];
 
     multiDayEvents.forEach((event) => {
@@ -291,7 +291,7 @@ export function useMultiDayEventRows(
  * @example
  * const dayEventPositions = useDayEventPositions(dayEvents, 60);
  */
-export function useDayEventPositions(events: EventTypes[], hourHeight: number) {
+export function useDayEventPositions(events: Events[], hourHeight: number) {
   return useMemo(() => {
     const positions: Record<string, EventPosition> = {};
 
@@ -371,7 +371,7 @@ export function useDayEventPositions(events: EventTypes[], hourHeight: number) {
  * const filteredEvents = useEventFilter(events, currentDate, CalendarViewType.WEEK);
  */
 export function useEventFilter(
-  events: EventTypes[],
+  events: Events[],
   currentDate: Date,
   viewType: CalendarViewType,
 ) {
@@ -402,7 +402,7 @@ export function useEventFilter(
  * const groupedEvents = useEventGrouper(events, CalendarViewType.DAY, TimeFormatType.HOUR_12);
  */
 export function useEventGrouper(
-  events: EventTypes[],
+  events: Events[],
   viewType: CalendarViewType,
   timeFormat: TimeFormatType,
   locale?: Locale,
@@ -434,7 +434,7 @@ export function useEventGrouper(
       },
       {} as Record<
         string,
-        { key: string; title: string; events: EventTypes[] }
+        { key: string; title: string; events: Events[] }
       >,
     );
 

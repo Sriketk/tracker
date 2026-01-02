@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, Suspense } from "react";
 import { EventCalendar } from "@/components/event-calendar/event-calendar";
 import { CalendarViewType, Events } from "@/types/event";
 import { useEventCalendarStore } from "@/hooks/use-event";
@@ -102,12 +102,14 @@ export default function Home() {
 
   return (
     <main className="min-h-screen w-full">
-      <EventCalendar
-        events={events}
-        initialDate={new Date()}
-        disabledViews={disabledViews}
-        journalEntries={journalEntries}
-      />
+      <Suspense fallback={<div className="min-h-screen w-full flex items-center justify-center">Loading...</div>}>
+        <EventCalendar
+          events={events}
+          initialDate={new Date()}
+          disabledViews={disabledViews}
+          journalEntries={journalEntries}
+        />
+      </Suspense>
     </main>
   );
 }
