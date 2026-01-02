@@ -317,30 +317,37 @@ const slashCommand = Command.configure({
   },
 });
 
-const getExtensions = (editable: boolean) => [
-  ...(editable
-    ? [
-        GlobalDragHandle.configure({
-          dragHandleWidth: 20,
-          scrollTreshold: 100,
-        }),
-        AutoJoiner.configure({
-          elementsToJoin: ['bulletList', 'orderedList'],
-        }),
-      ]
-    : []),
-  starterKit,
-  TextStyle,
-  Color,
-  placeholder,
-  tiptapLink,
-  tiptapImage,
-  UpdatedImage,
-  taskList,
-  taskItem,
-  horizontalRule,
-  slashCommand,
-];
+const getExtensions = (editable: boolean) => {
+  const baseExtensions = [
+    starterKit,
+    TextStyle,
+    Color,
+    placeholder,
+    tiptapLink,
+    tiptapImage,
+    UpdatedImage,
+    taskList,
+    taskItem,
+    horizontalRule,
+    slashCommand,
+  ];
+
+  if (editable) {
+    // Type assertion needed due to incompatibility between third-party extension types
+    return [
+      GlobalDragHandle.configure({
+        dragHandleWidth: 20,
+        scrollTreshold: 100,
+      }),
+      AutoJoiner.configure({
+        elementsToJoin: ['bulletList', 'orderedList'],
+      }),
+      ...baseExtensions,
+    ] as any[];
+  }
+
+  return baseExtensions;
+};
 
 interface NovelEditorProps {
   initialContent?: JSONContent | null;
