@@ -10,8 +10,8 @@ import {
   EditorBubble,
   useEditor,
 } from 'novel';
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useQuery, useMutation } from 'convex/react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useQuery, useMutation, useConvex } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import {
   TiptapImage,
@@ -59,33 +59,17 @@ import { toast } from 'sonner';
 // Type for the TipTap editor instance (can be null)
 type Editor = NonNullable<ReturnType<typeof useEditor>['editor']>;
 
-// Image upload function
-const onUpload = async (file: File): Promise<string> => {
-  // Convert to base64 for now (can be replaced with actual upload to Convex/storage later)
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      resolve(base64);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+// Validate image file
+const validateImageFile = (file: File): boolean => {
+  if (!file.type.includes('image/')) {
+    toast.error('File type not supported.');
+    return false;
+  } else if (file.size / 1024 / 1024 > 20) {
+    toast.error('File size too big (max 20MB).');
+    return false;
+  }
+  return true;
 };
-
-const uploadFn = createImageUpload({
-  onUpload,
-  validateFn: (file: File) => {
-    if (!file.type.includes('image/')) {
-      toast.error('File type not supported.');
-      return false;
-    } else if (file.size / 1024 / 1024 > 20) {
-      toast.error('File size too big (max 20MB).');
-      return false;
-    }
-    return true;
-  },
-});
 
 // Configure extensions with Tailwind classes
 const placeholder = Placeholder.configure({
@@ -178,14 +162,18 @@ const starterKit = StarterKit.configure({
   gapcursor: false,
 });
 
-// Define slash command suggestions
-const suggestionItems = createSuggestionItems([
+// Type for suggestion command props (Novel uses internal types that don't export cleanly)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SuggestionCommandProps = { editor: any; range: any };
+
+// Define slash command suggestions (without Image - that's added dynamically with upload function)
+const baseSuggestionItems = [
   {
     title: 'Text',
     description: 'Just start typing with plain text.',
     searchTerms: ['p', 'paragraph'],
     icon: <Text size={18} />,
-    command: ({ editor, range }) => {
+    command: ({ editor, range }: SuggestionCommandProps) => {
       editor
         .chain()
         .focus()
@@ -199,7 +187,7 @@ const suggestionItems = createSuggestionItems([
     description: 'Track tasks with a to-do list.',
     searchTerms: ['todo', 'task', 'list', 'check', 'checkbox'],
     icon: <CheckSquare size={20} />,
-    command: ({ editor, range }) => {
+    command: ({ editor, range }: SuggestionCommandProps) => {
       editor.chain().focus().deleteRange(range).toggleTaskList().run();
     },
   },
@@ -208,7 +196,7 @@ const suggestionItems = createSuggestionItems([
     description: 'Big section heading.',
     searchTerms: ['title', 'big', 'large'],
     icon: <Heading1 size={18} />,
-    command: ({ editor, range }) => {
+    command: ({ editor, range }: SuggestionCommandProps) => {
       editor
         .chain()
         .focus()
@@ -222,7 +210,7 @@ const suggestionItems = createSuggestionItems([
     description: 'Medium section heading.',
     searchTerms: ['subtitle', 'medium'],
     icon: <Heading2 size={18} />,
-    command: ({ editor, range }) => {
+    command: ({ editor, range }: SuggestionCommandProps) => {
       editor
         .chain()
         .focus()
@@ -236,7 +224,7 @@ const suggestionItems = createSuggestionItems([
     description: 'Small section heading.',
     searchTerms: ['subtitle', 'small'],
     icon: <Heading3 size={18} />,
-    command: ({ editor, range }) => {
+    command: ({ editor, range }: SuggestionCommandProps) => {
       editor
         .chain()
         .focus()
@@ -250,7 +238,7 @@ const suggestionItems = createSuggestionItems([
     description: 'Create a simple bullet list.',
     searchTerms: ['unordered', 'point'],
     icon: <List size={18} />,
-    command: ({ editor, range }) => {
+    command: ({ editor, range }: SuggestionCommandProps) => {
       editor.chain().focus().deleteRange(range).toggleBulletList().run();
     },
   },
@@ -259,7 +247,7 @@ const suggestionItems = createSuggestionItems([
     description: 'Create a list with numbering.',
     searchTerms: ['ordered'],
     icon: <ListOrdered size={18} />,
-    command: ({ editor, range }) => {
+    command: ({ editor, range }: SuggestionCommandProps) => {
       editor.chain().focus().deleteRange(range).toggleOrderedList().run();
     },
   },
@@ -268,7 +256,7 @@ const suggestionItems = createSuggestionItems([
     description: 'Capture a quote.',
     searchTerms: ['blockquote'],
     icon: <TextQuote size={18} />,
-    command: ({ editor, range }) => {
+    command: ({ editor, range }: SuggestionCommandProps) => {
       editor
         .chain()
         .focus()
@@ -283,41 +271,15 @@ const suggestionItems = createSuggestionItems([
     description: 'Capture a code snippet.',
     searchTerms: ['codeblock'],
     icon: <Code size={18} />,
-    command: ({ editor, range }) => {
+    command: ({ editor, range }: SuggestionCommandProps) => {
       editor.chain().focus().deleteRange(range).toggleCodeBlock().run();
     },
   },
-  {
-    title: 'Image',
-    description: 'Upload an image from your computer.',
-    searchTerms: ['photo', 'picture', 'media'],
-    icon: <ImageIcon size={18} />,
-    command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).run();
-      // Upload image
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*';
-      input.onchange = async () => {
-        if (input.files?.length) {
-          const file = input.files[0];
-          const pos = editor.view.state.selection.from;
-          uploadFn(file, editor.view, pos);
-        }
-      };
-      input.click();
-    },
-  },
-]);
+];
 
-const slashCommand = Command.configure({
-  suggestion: {
-    items: () => suggestionItems,
-    render: renderItems,
-  },
-});
-
-const getExtensions = (editable: boolean) => {
+// Helper to create extensions with a specific slash command
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getExtensions = (editable: boolean, slashCommand: any) => {
   const baseExtensions = [
     starterKit,
     TextStyle,
@@ -343,6 +305,7 @@ const getExtensions = (editable: boolean) => {
         elementsToJoin: ['bulletList', 'orderedList'],
       }),
       ...baseExtensions,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ] as any[];
   }
 
@@ -373,6 +336,91 @@ export function NovelEditor({
   // Load from Convex
   const journalEntry = useQuery(api.journal.get, { dateKey });
   const saveJournal = useMutation(api.journal.save);
+  
+  // Convex client for file uploads
+  const convex = useConvex();
+  const generateUploadUrl = useMutation(api.storage.generateUploadUrl);
+
+  // Create image upload function using Convex storage
+  const uploadImageToConvex = useCallback(async (file: File): Promise<string> => {
+    try {
+      // Step 1: Get a short-lived upload URL from Convex
+      const uploadUrl = await generateUploadUrl();
+      
+      // Step 2: Upload the file to the URL
+      const result = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+      
+      if (!result.ok) {
+        throw new Error('Failed to upload image');
+      }
+      
+      const { storageId } = await result.json();
+      
+      // Step 3: Get the public URL for the uploaded file
+      const imageUrl = await convex.query(api.storage.getUrl, { storageId });
+      
+      if (!imageUrl) {
+        throw new Error('Failed to get image URL');
+      }
+      
+      toast.success('Image uploaded successfully');
+      return imageUrl;
+    } catch (error) {
+      console.error('Image upload error:', error);
+      toast.error('Failed to upload image');
+      throw error;
+    }
+  }, [generateUploadUrl, convex]);
+
+  // Create the upload function for the editor
+  const uploadFn = useMemo(() => createImageUpload({
+    onUpload: uploadImageToConvex,
+    validateFn: validateImageFile,
+  }), [uploadImageToConvex]);
+
+  // Create suggestion items with the upload function
+  const suggestionItems = useMemo(() => createSuggestionItems([
+    ...baseSuggestionItems,
+    {
+      title: 'Image',
+      description: 'Upload an image from your computer.',
+      searchTerms: ['photo', 'picture', 'media'],
+      icon: <ImageIcon size={18} />,
+      command: ({ editor, range }: SuggestionCommandProps) => {
+        editor.chain().focus().deleteRange(range).run();
+        // Upload image
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = async () => {
+          if (input.files?.length) {
+            const file = input.files[0];
+            const pos = editor.view.state.selection.from;
+            uploadFn(file, editor.view, pos);
+          }
+        };
+        input.click();
+      },
+    },
+  ]), [uploadFn]);
+
+  // Create the slash command with the suggestion items
+  const slashCommand = useMemo(() => Command.configure({
+    suggestion: {
+      items: () => suggestionItems,
+      render: renderItems,
+    },
+  }), [suggestionItems]);
+
+  // Create extensions with the slash command
+  const extensions = useMemo(
+    () => getExtensions(editable, slashCommand),
+    [editable, slashCommand]
+  );
 
   // Set content from Convex when it loads
   const content = journalEntry?.content || initialContent || null;
@@ -459,7 +507,7 @@ export function NovelEditor({
     <EditorRoot>
       <EditorContent
         key={`${dateKey}-${journalEntry?._id || 'new'}`} // Force re-render when dateKey or entry changes
-        extensions={getExtensions(editable)}
+        extensions={extensions}
         initialContent={content || defaultContent}
         onCreate={({ editor }) => {
           // Store editor reference

@@ -10,6 +10,7 @@
 
 import type * as events from "../events.js";
 import type * as journal from "../journal.js";
+import type * as storage from "../storage.js";
 import type * as tasks from "../tasks.js";
 
 import type {
@@ -21,6 +22,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   events: typeof events;
   journal: typeof journal;
+  storage: typeof storage;
   tasks: typeof tasks;
 }>;
 
