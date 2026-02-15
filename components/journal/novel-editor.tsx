@@ -341,7 +341,20 @@ export function NovelEditor({
   const convex = useConvex();
   const generateUploadUrl = useMutation(api.storage.generateUploadUrl);
 
-  // Create image upload function using Convex storage
+  // Fallback: Convert file to base64 (used when Convex storage fails)
+  const convertToBase64 = useCallback((file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }, []);
+
+  // Create image upload function using Convex storage with base64 fallback
   const uploadImageToConvex = useCallback(async (file: File): Promise<string> => {
     try {
       // Step 1: Get a short-lived upload URL from Convex
@@ -355,7 +368,7 @@ export function NovelEditor({
       });
       
       if (!result.ok) {
-        throw new Error('Failed to upload image');
+        throw new Error('Failed to upload image to storage');
       }
       
       const { storageId } = await result.json();
@@ -364,17 +377,25 @@ export function NovelEditor({
       const imageUrl = await convex.query(api.storage.getUrl, { storageId });
       
       if (!imageUrl) {
-        throw new Error('Failed to get image URL');
+        throw new Error('Failed to get image URL from storage');
       }
       
       toast.success('Image uploaded successfully');
       return imageUrl;
     } catch (error) {
-      console.error('Image upload error:', error);
-      toast.error('Failed to upload image');
-      throw error;
+      // Fallback to base64 if Convex storage fails
+      console.warn('Convex storage upload failed, falling back to base64:', error);
+      try {
+        const base64Url = await convertToBase64(file);
+        toast.success('Image added (stored locally)');
+        return base64Url;
+      } catch (base64Error) {
+        console.error('Base64 fallback also failed:', base64Error);
+        toast.error('Failed to add image');
+        throw base64Error;
+      }
     }
-  }, [generateUploadUrl, convex]);
+  }, [generateUploadUrl, convex, convertToBase64]);
 
   // Create the upload function for the editor
   const uploadFn = useMemo(() => createImageUpload({
