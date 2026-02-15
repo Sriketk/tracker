@@ -57,20 +57,20 @@ class TrackerDatabase extends Dexie {
   tasks!: EntityTable<Task, 'id'>;
   events!: EntityTable<Event, 'id'>;
 
-  constructor() {
-    super('TrackerDB');
-    
+  constructor () {
+    super( 'TrackerDB' );
+
     // Define database schema
-    this.version(1).stores({
+    this.version( 1 ).stores( {
       // journalEntries: dateKey is the primary key, indexed by dateKey and updatedAt
       journalEntries: 'dateKey, updatedAt',
-      
+
       // tasks: auto-incremented id
       tasks: '++id, isCompleted',
-      
+
       // events: id is the primary key (UUID), indexed by date for fast queries
       events: 'id, date, createdAt, updatedAt',
-    });
+    } );
   }
 }
 
