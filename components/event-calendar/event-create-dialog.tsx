@@ -24,8 +24,7 @@ import { EVENT_DEFAULTS } from '@/constants/calendar-constant';
 import { useShallow } from 'zustand/shallow';
 import { toast } from 'sonner';
 import { getLocaleFromCode } from '@/lib/event';
-import { useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
+import { useCreateEvent } from '@/hooks/use-local-events';
 import { format } from 'date-fns';
 
 type EventFormValues = z.infer<typeof createEventSchema>;
@@ -64,7 +63,7 @@ export default function EventCreateDialog() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const localeObj = getLocaleFromCode(locale);
-  const createEvent = useMutation(api.events.create);
+  const createEvent = useCreateEvent();
 
   const watchedValues = form.watch();
 

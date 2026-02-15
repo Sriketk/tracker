@@ -5,10 +5,9 @@ import { EventCalendar } from "@/components/event-calendar/event-calendar";
 import { CalendarViewType, Events } from "@/types/event";
 import { useEventCalendarStore } from "@/hooks/use-event";
 import { useShallow } from "zustand/shallow";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useEvents } from "@/hooks/use-local-events";
+import { useJournalEntriesByDateRange } from "@/hooks/use-local-journal";
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, parse } from "date-fns";
-import { Id } from "@/convex/_generated/dataModel";
 
 export default function Home() {
   const { setView, currentView } = useEventCalendarStore(
@@ -60,21 +59,21 @@ export default function Home() {
     }
   }, [currentView, today]);
 
-  // Fetch events from Convex
-  const convexEvents = useQuery(api.events.list);
+  // Fetch events from IndexedDB
+  const localEvents = useEvents();
 
-  // Transform Convex events to Events type
+  // Transform local events to Events type
   const events = useMemo<Events[]>(() => {
-    if (!convexEvents) return [];
+    if (!localEvents) return [];
     
-    return convexEvents.map((event): Events => {
+    return localEvents.map((event): Events => {
       const startDate = parse(event.date, 'yyyy-MM-dd', new Date());
       const endDate = event.endTime 
         ? parse(event.date, 'yyyy-MM-dd', new Date())
         : parse(event.date, 'yyyy-MM-dd', new Date());
       
       return {
-        id: event._id,
+        id: event.id,
         title: event.title,
         description: event.description || '',
         startDate,
@@ -84,21 +83,32 @@ export default function Home() {
         isRepeating: event.isRepeating || false,
         repeatingType: event.repeatingType || null,
         location: event.location || '',
-        category: '', // Not in Convex schema, defaulting to empty
+        category: '', // Not in schema, defaulting to empty
         color: event.color,
         createdAt: new Date(event.createdAt),
         updatedAt: new Date(event.updatedAt),
       };
     });
-  }, [convexEvents]);
+  }, [localEvents]);
 
-  // Fetch journal entries for the date range
-  const journalEntries = useQuery(
-    api.journal.getByDateRange,
-    dateRange.startDate && dateRange.endDate
-      ? { startDate: dateRange.startDate, endDate: dateRange.endDate }
-      : "skip"
+  // Fetch journal entries for the date range from IndexedDB
+  const journalEntriesArray = useJournalEntriesByDateRange(
+    dateRange.startDate,
+    dateRange.endDate
   );
+
+  // Transform array to Record for the calendar component
+  const journalEntries = useMemo(() => {
+    if (!journalEntriesArray) return undefined;
+    
+    return journalEntriesArray.reduce((acc, entry) => {
+      acc[entry.dateKey] = {
+        dateKey: entry.dateKey,
+        updatedAt: entry.updatedAt,
+      };
+      return acc;
+    }, {} as Record<string, { dateKey: string; updatedAt: number }>);
+  }, [journalEntriesArray]);
 
   return (
     <main className="min-h-screen w-full">

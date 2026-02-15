@@ -21,10 +21,8 @@ import { EventDetailsForm } from './event-detail-form';
 import { toast } from 'sonner';
 import { useShallow } from 'zustand/shallow';
 import { getLocaleFromCode } from '@/lib/event';
-import { useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
+import { useUpdateEvent, useDeleteEvent } from '@/hooks/use-local-events';
 import { format, parse } from 'date-fns';
-import { Id } from '@/convex/_generated/dataModel';
 
 const DEFAULT_START_TIME = '09:00';
 const DEFAULT_END_TIME = '10:00';
@@ -73,8 +71,8 @@ export default function EventDialog() {
 
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState<boolean>(false);
   const isMounted = useIsMounted();
-  const updateEvent = useMutation(api.events.update);
-  const deleteEvent = useMutation(api.events.remove);
+  const updateEvent = useUpdateEvent();
+  const deleteEvent = useDeleteEvent();
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
@@ -114,7 +112,7 @@ export default function EventDialog() {
     if (!selectedEvent?.id) return;
 
     try {
-      const eventId = selectedEvent.id as Id<'events'>;
+      const eventId = selectedEvent.id as string;
       const dateString = format(values.date, 'yyyy-MM-dd');
 
       await updateEvent({
@@ -142,8 +140,8 @@ export default function EventDialog() {
     if (!selectedEvent?.id) return;
 
     try {
-      const eventId = selectedEvent.id as Id<'events'>;
-      await deleteEvent({ id: eventId });
+      const eventId = selectedEvent.id as string;
+      await deleteEvent(eventId);
       toast.success('Event deleted successfully');
       setIsDeleteAlertOpen(false);
       closeEventDialog();
