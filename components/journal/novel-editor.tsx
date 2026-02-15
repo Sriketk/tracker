@@ -11,8 +11,7 @@ import {
   useEditor,
 } from 'novel';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useQuery, useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
+import { useJournalEntry, useSaveJournalEntry } from '@/hooks/use-local-journal';
 import {
   TiptapImage,
   TiptapLink,
@@ -370,11 +369,11 @@ export function NovelEditor({
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
-  // Load from Convex
-  const journalEntry = useQuery(api.journal.get, { dateKey });
-  const saveJournal = useMutation(api.journal.save);
+  // Load from IndexedDB
+  const journalEntry = useJournalEntry(dateKey);
+  const saveJournal = useSaveJournalEntry();
 
-  // Set content from Convex when it loads
+  // Set content from IndexedDB when it loads
   const content = journalEntry?.content || initialContent || null;
 
   // Default content structure
@@ -458,9 +457,9 @@ export function NovelEditor({
   return (
     <EditorRoot>
       <EditorContent
-        key={`${dateKey}-${journalEntry?._id || 'new'}`} // Force re-render when dateKey or entry changes
+        key={`${dateKey}-${journalEntry?.dateKey || 'new'}`} // Force re-render when dateKey or entry changes
         extensions={getExtensions(editable)}
-        initialContent={content || defaultContent}
+        initialContent={(content || defaultContent) as any}
         onCreate={({ editor }) => {
           // Store editor reference
           editorRef.current = editor;
